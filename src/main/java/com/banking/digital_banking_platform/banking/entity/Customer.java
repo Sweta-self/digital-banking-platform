@@ -1,5 +1,6 @@
 package com.banking.digital_banking_platform.banking.entity;
 
+import com.banking.digital_banking_platform.banking.common.enums.KycStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,7 +23,8 @@ public class Customer {
     @Column(unique = true)
     private String email;
     private String mobile;
-    private String kycStatus; //PENDING,VERIFIED
+    @Enumerated(EnumType.STRING)
+    private KycStatus kycStatus; //PENDING,VERIFIED
 
     @OneToMany(mappedBy = "customer")
     private List<Account> accountList;

@@ -22,8 +22,10 @@ public class Account {
     private Long id;
     @Column(unique = true)
     private String accountNumber;
+    @Enumerated(EnumType.STRING)
     private AccountType accountType;//SAVINGS,CURRENT
     private BigDecimal balance;
+    @Enumerated(EnumType.STRING)
     private AccountStatus status;//ACTIVE,FROZEN
 
     @ManyToOne

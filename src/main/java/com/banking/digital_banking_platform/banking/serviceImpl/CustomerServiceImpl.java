@@ -1,5 +1,6 @@
 package com.banking.digital_banking_platform.banking.serviceImpl;
 
+import com.banking.digital_banking_platform.banking.common.enums.KycStatus;
 import com.banking.digital_banking_platform.banking.dto.CustomerRequestDto;
 import com.banking.digital_banking_platform.banking.entity.Customer;
 import com.banking.digital_banking_platform.banking.repository.CustomerRepository;
@@ -21,7 +22,7 @@ public class CustomerServiceImpl implements CustomerService {
        customer.setFullName(request.getFullName());
        customer.setEmail(request.getEmail());
        customer.setMobile(request.getMobile());
-       customer.setKycStatus("PENDING");
+       customer.setKycStatus(KycStatus.PENDING);
 
        return customerRepository.save(customer).getId();
 

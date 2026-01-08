@@ -1,6 +1,7 @@
 package com.banking.digital_banking_platform.banking.serviceImpl;
 
 import com.banking.digital_banking_platform.banking.common.enums.AccountStatus;
+import com.banking.digital_banking_platform.banking.common.enums.KycStatus;
 import com.banking.digital_banking_platform.banking.common.util.AccountNumberGenerator;
 import com.banking.digital_banking_platform.banking.dto.AccountRequestDto;
 import com.banking.digital_banking_platform.banking.dto.AccountResponseDto;
@@ -25,6 +26,10 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponseDto openAccount(AccountRequestDto request) {
         Customer customer= customerRepository.findById(request.getCustomerId())
                 .orElseThrow(()->new RuntimeException("customer not found"));
+
+        if(!customer.getKycStatus().equals(KycStatus.VERIFIED)){
+            throw new RuntimeException(("KYC NOT VERIFIED"));
+        }
         Account account=new Account();
         account.setAccountNumber(accountNumberGenerator.generateAccountNumber());
         account.setAccountType(request.getAccountType());
