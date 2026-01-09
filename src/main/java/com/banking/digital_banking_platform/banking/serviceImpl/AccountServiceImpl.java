@@ -12,6 +12,7 @@ import com.banking.digital_banking_platform.banking.repository.CustomerRepositor
 import com.banking.digital_banking_platform.banking.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
@@ -23,13 +24,18 @@ public class AccountServiceImpl implements AccountService {
     private final AccountNumberGenerator accountNumberGenerator;
 
     @Override
+    @Transactional
     public AccountResponseDto openAccount(AccountRequestDto request) {
         Customer customer= customerRepository.findById(request.getCustomerId())
                 .orElseThrow(()->new RuntimeException("customer not found"));
+ KycStatus status=customer.getKycStatus();
+ if(status==KycStatus.PENDING){
+     throw new RuntimeException("KYC is pending verification");
+ }
+ if(status==KycStatus.REJECTED){
+     throw new RuntimeException("KYC rejected.Please re-submit documents");
+ }
 
-        if(!customer.getKycStatus().equals(KycStatus.VERIFIED)){
-            throw new RuntimeException(("KYC NOT VERIFIED"));
-        }
         Account account=new Account();
         account.setAccountNumber(accountNumberGenerator.generateAccountNumber());
         account.setAccountType(request.getAccountType());

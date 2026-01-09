@@ -7,6 +7,7 @@ import com.banking.digital_banking_platform.banking.repository.CustomerRepositor
 import com.banking.digital_banking_platform.banking.service.AdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,6 +17,7 @@ public class AdminServiceImpl implements AdminService {
 
     private final CustomerRepository customerRepository;
     @Override
+    @Transactional
     public void updateKycStatus(KycUpdateRequestDto request) {
         Customer customer=customerRepository.findById(request.getCustomerId())
                 .orElseThrow(()-> new RuntimeException("Customer not found"));

@@ -3,6 +3,8 @@ package com.banking.digital_banking_platform.banking.repository;
 import com.banking.digital_banking_platform.banking.entity.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 public interface AccountRepository extends JpaRepository<Account,Long> {
-    boolean existsByAccountNumber(String accountNumber);
+  Optional<Account> findByAccountNumber(String accountNumber);
 }
