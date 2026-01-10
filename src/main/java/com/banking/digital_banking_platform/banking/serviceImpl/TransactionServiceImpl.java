@@ -30,10 +30,10 @@ public class TransactionServiceImpl implements TransactionService {
     public FundTransferResponseDto transferFunds(FundTransferRequestDto request) {
         String refId=UUID.randomUUID().toString();
         try {
-            Account sender = accountRepository.findByAccountNumber(request.getSenderAccount())
+            Account sender = accountRepository.findByAccountNumberForUpdate(request.getSenderAccount())
                     .orElseThrow(() -> new RuntimeException("Sender account not found"));
 
-            Account receiver = accountRepository.findByAccountNumber(request.getReceiverAccount())
+            Account receiver = accountRepository.findByAccountNumberForUpdate(request.getReceiverAccount())
                     .orElseThrow(() -> new RuntimeException("Receiver account not found"));
 
             // Status checks
