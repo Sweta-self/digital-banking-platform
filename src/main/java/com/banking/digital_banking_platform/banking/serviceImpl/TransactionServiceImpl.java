@@ -6,8 +6,10 @@ import com.banking.digital_banking_platform.banking.common.enums.TransactionType
 import com.banking.digital_banking_platform.banking.dto.FundTransferRequestDto;
 import com.banking.digital_banking_platform.banking.dto.FundTransferResponseDto;
 import com.banking.digital_banking_platform.banking.entity.Account;
+import com.banking.digital_banking_platform.banking.entity.IdempotencyRecord;
 import com.banking.digital_banking_platform.banking.entity.Transaction;
 import com.banking.digital_banking_platform.banking.repository.AccountRepository;
+import com.banking.digital_banking_platform.banking.repository.IdempotencyRepository;
 import com.banking.digital_banking_platform.banking.repository.TransactionRepository;
 import com.banking.digital_banking_platform.banking.service.TransactionService;
 import lombok.RequiredArgsConstructor;
@@ -18,22 +20,38 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
 
-    private final AccountRepository accountRepository;
-    private final TransactionRepository transactionRepository;
+
+
     private final TransferInternalService transferInternalService;
+    private final IdempotencyRepository idempotencyRepository;
+    private final IdempotencyService idempotencyService;
+
      private static final int MAX_RETRY=3;
     @Override
-    public FundTransferResponseDto transferWithRetry(FundTransferRequestDto request) {
+    public FundTransferResponseDto transferWithRetry(FundTransferRequestDto request,
+    String idempotencyKey) {
+        //Check idempotency
+        Optional<IdempotencyRecord>existing=idempotencyRepository
+                .findByIdempotencyKey(idempotencyKey);
+        if(existing.isPresent()){
+            return new FundTransferResponseDto(
+                    existing.get().getResponseMessage(),
+            existing.get().getTransactionId());
+        }
     int attempt=0;
     while(attempt<MAX_RETRY){
         try{
-            return transferInternalService.transferFunds(request);
+            FundTransferResponseDto response=
+                    transferInternalService.transferFunds(request);
+            idempotencyService.saveIdempotency(idempotencyKey,response);
+            return response;
         }
         catch(Exception e){
             attempt++;

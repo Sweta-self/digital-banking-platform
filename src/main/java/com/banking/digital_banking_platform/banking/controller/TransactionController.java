@@ -5,10 +5,7 @@ import com.banking.digital_banking_platform.banking.dto.FundTransferResponseDto;
 import com.banking.digital_banking_platform.banking.service.TransactionService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/transactions")
@@ -17,8 +14,9 @@ public class TransactionController {
     private final TransactionService transactionService;
     @PostMapping("/transfer")
     public ResponseEntity<FundTransferResponseDto> transfer(
+            @RequestHeader("Idempotency-Key")String idemKey,
             @RequestBody FundTransferRequestDto request){
-return ResponseEntity.ok(transactionService.transferWithRetry(request));
+return ResponseEntity.ok(transactionService.transferWithRetry(request,idemKey));
     }
 
 }
