@@ -18,7 +18,7 @@ public class TransactionController {
     @PostMapping("/transfer")
     public ResponseEntity<FundTransferResponseDto> transfer(
             @RequestBody FundTransferRequestDto request){
-return ResponseEntity.ok(transactionService.transferFunds(request));
+return ResponseEntity.ok(transactionService.transferWithRetry(request));
     }
 
 }

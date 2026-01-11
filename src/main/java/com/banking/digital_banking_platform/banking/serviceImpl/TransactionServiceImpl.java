@@ -11,6 +11,8 @@ import com.banking.digital_banking_platform.banking.repository.AccountRepository
 import com.banking.digital_banking_platform.banking.repository.TransactionRepository;
 import com.banking.digital_banking_platform.banking.service.TransactionService;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.PessimisticLockException;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,72 +26,30 @@ public class TransactionServiceImpl implements TransactionService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
-
+    private final TransferInternalService transferInternalService;
+     private static final int MAX_RETRY=3;
     @Override
-    @Transactional
-    public FundTransferResponseDto transferFunds(FundTransferRequestDto request) {
-        String refId=UUID.randomUUID().toString();
-        try {
-            Account sender = accountRepository.findByAccountNumberForUpdate(request.getSenderAccount())
-                    .orElseThrow(() -> new RuntimeException("Sender account not found"));
-
-            Account receiver = accountRepository.findByAccountNumberForUpdate(request.getReceiverAccount())
-                    .orElseThrow(() -> new RuntimeException("Receiver account not found"));
-
-            // Status checks
-            if (sender.getStatus() != AccountStatus.ACTIVE) {
-                throw new RuntimeException("Sender account not eligible for Transfer");
-            }
-            if (receiver.getStatus() != AccountStatus.ACTIVE) {
-                throw new RuntimeException("Receiver account inactive");
-            }
-            if (sender.getBalance().compareTo(request.getAmount()) < 0) {
-                throw new RuntimeException("Insufficient Balance");
-            }
-            //Debit and credit
-            sender.setBalance(sender.getBalance().subtract(request.getAmount()));
-            receiver.setBalance(receiver.getBalance().add(request.getAmount()));
-
-            accountRepository.save(sender);
-            accountRepository.save(receiver);
-
-            //save Transaction
-
-
-            transactionRepository.save(buildTxn(
-                    sender.getAccountNumber(),
-                    refId,
-                    request.getAmount(),
-                    TransactionType.DEBIT
-            ));
-            transactionRepository.save(buildTxn(
-                    receiver.getAccountNumber(),
-                    refId,
-                    request.getAmount(),
-                    TransactionType.CREDIT
-            ));
-            return new FundTransferResponseDto(
-                    "Transaction successful",
-                    refId
-            );
+    public FundTransferResponseDto transferWithRetry(FundTransferRequestDto request) {
+    int attempt=0;
+    while(attempt<MAX_RETRY){
+        try{
+            return transferInternalService.transferFunds(request);
         }
-        catch(Exception ex){
-
-
-            throw ex;//rollback
+        catch(Exception e){
+            attempt++;
+            if(attempt == MAX_RETRY){
+                throw e;
+            }
+            try{
+                Thread.sleep(200);
+            }
+            catch(InterruptedException ignored){}
         }
+    }
+  throw new RuntimeException("Transfer failed retries");
+    }
 
-    }
-    private Transaction buildTxn(String accNo, String refId,
-                                 BigDecimal amount,
-                                 TransactionType type){
-        Transaction txn=new Transaction();
-        txn.setReferenceId(refId);
-        txn.setTransactionType(type);
-        txn.setAccountNumber(accNo);
-        txn.setStatus(TransactionStatus.SUCCESS);
-        txn.setAmount(amount);
-        txn.setTransactionDate(LocalDateTime.now());
-        return txn;
-    }
+
+
+
 }

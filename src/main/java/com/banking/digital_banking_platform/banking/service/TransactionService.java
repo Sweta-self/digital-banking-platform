@@ -4,5 +4,5 @@ import com.banking.digital_banking_platform.banking.dto.FundTransferRequestDto;
 import com.banking.digital_banking_platform.banking.dto.FundTransferResponseDto;
 
 public interface TransactionService {
-    FundTransferResponseDto transferFunds(FundTransferRequestDto request);
+    FundTransferResponseDto transferWithRetry(FundTransferRequestDto request);
 }
