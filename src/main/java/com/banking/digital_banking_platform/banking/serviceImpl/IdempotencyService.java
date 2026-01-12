@@ -4,6 +4,7 @@ import com.banking.digital_banking_platform.banking.dto.FundTransferResponseDto;
 import com.banking.digital_banking_platform.banking.entity.IdempotencyRecord;
 import com.banking.digital_banking_platform.banking.repository.IdempotencyRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +27,13 @@ public class IdempotencyService {
         record.setTransactionId(response.getTransactionId());
         record.setResponseMessage(response.getMessage());
         record.setCreatedAt(LocalDateTime.now());
-        idempotencyRepository.save(record);
+        //idempotencyRepository.save(record);
+        try {
+            idempotencyRepository.save(record);
+        } catch (DataIntegrityViolationException e) {
+            // another thread already saved same key
+            // idempotency guarantee already satisfied
+        }
     }
 
     @Transactional(readOnly = true)

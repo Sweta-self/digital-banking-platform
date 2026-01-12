@@ -2,6 +2,7 @@ package com.banking.digital_banking_platform.banking.serviceImpl;
 
 import com.banking.digital_banking_platform.banking.common.enums.AccountStatus;
 import com.banking.digital_banking_platform.banking.common.enums.TransactionStatus;
+import com.banking.digital_banking_platform.banking.common.enums.TransactionType;
 import com.banking.digital_banking_platform.banking.dto.FundTransferRequestDto;
 import com.banking.digital_banking_platform.banking.dto.FundTransferResponseDto;
 import com.banking.digital_banking_platform.banking.entity.Account;
@@ -27,7 +28,8 @@ public class TransferInternalService {
     private final TransactionRepository transactionRepository;
 
     @Transactional
-    public FundTransferResponseDto transferFunds(FundTransferRequestDto request) {
+    public FundTransferResponseDto transferFunds(FundTransferRequestDto request,String refId ) {
+
         try{
             //Always lock in SAME ORDER to reduce deadlock
             Account debitAcc=lockAccount(
@@ -43,6 +45,20 @@ public class TransferInternalService {
             if(debitAcc.getBalance().compareTo(request.getAmount())<0){
                 throw new RuntimeException("Insufficient Balance");
             }
+            //Save debit Ledger
+            Transaction debitTx= createLedger(
+                    refId,
+                    request.getSenderAccount(),
+                    TransactionType.DEBIT,
+                    request.getAmount());
+            //save credit ledger
+            Transaction creditTx= createLedger(
+                    refId,
+                    request.getReceiverAccount(),
+                    TransactionType.CREDIT,
+                    request.getAmount());
+
+
             //Debit
             debitAcc.setBalance(debitAcc.getBalance().subtract(request.getAmount()));
             //Credit
@@ -51,14 +67,18 @@ public class TransferInternalService {
             accountRepository.save(debitAcc);
             accountRepository.save(creditAcc);
 
-            Transaction tx= saveTransaction(
-                    request.getSenderAccount(),
-                    request.getReceiverAccount(),
-                    request.getAmount());
+           //MARK SUCCESS
+            debitTx.setStatus(TransactionStatus.SUCCESS);
+            creditTx.setStatus(TransactionStatus.SUCCESS);
+
+            transactionRepository.save(debitTx);
+            transactionRepository.save(creditTx);
             return new FundTransferResponseDto(
                     "Transfer successful",
-                    tx.getReferenceId()
+                    refId
             );
+
+
         }
         catch(PessimisticLockException | CannotAcquireLockException e){
             throw new RuntimeException("Deadlock occured",e);
@@ -78,16 +98,20 @@ public class TransferInternalService {
             throw new RuntimeException("Account is Blocked");
         }
     }
-    private Transaction saveTransaction(String from, String to, BigDecimal amount)
-    {
+    private Transaction createLedger(
+            String refId,
+            String accNo,
+            TransactionType type,
+            BigDecimal amount
+    ){
         Transaction txn=new Transaction();
-        txn.setSenderAccount(from);
-        txn.setReceiverAccount(to);
-        txn.setReferenceId(UUID.randomUUID().toString());
-        txn.setStatus(TransactionStatus.SUCCESS);
+        txn.setReferenceId(refId);
+        txn.setAccountNumber(accNo);
+        txn.setTransactionType(type);
         txn.setAmount(amount);
+        txn.setStatus(TransactionStatus.INITIATED);
         txn.setTransactionDate(LocalDateTime.now());
-       return  transactionRepository.save(txn);
-
+        return  transactionRepository.save(txn);
     }
+
 }

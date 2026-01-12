@@ -49,11 +49,11 @@ public class TransactionServiceImpl implements TransactionService {
     while(attempt<MAX_RETRY){
         try{
             FundTransferResponseDto response=
-                    transferInternalService.transferFunds(request);
+                    transferInternalService.transferFunds(request,idempotencyKey);
             idempotencyService.saveIdempotency(idempotencyKey,response);
             return response;
         }
-        catch(Exception e){
+        catch(PessimisticLockException | CannotAcquireLockException  e){
             attempt++;
             if(attempt == MAX_RETRY){
                 throw e;
