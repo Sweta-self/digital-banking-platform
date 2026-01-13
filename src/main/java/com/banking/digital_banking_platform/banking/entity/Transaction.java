@@ -34,7 +34,9 @@ public class Transaction {
     private TransactionStatus status; //SUCCESS,FAILED
 
     private BigDecimal closingBalance;
+
     private LocalDateTime transactionDate;
+
     @Column(nullable=false,unique=true)
     private String referenceId; //UTR /UUID
 

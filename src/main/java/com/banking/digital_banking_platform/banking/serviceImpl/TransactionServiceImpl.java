@@ -5,6 +5,7 @@ import com.banking.digital_banking_platform.banking.common.enums.TransactionStat
 import com.banking.digital_banking_platform.banking.common.enums.TransactionType;
 import com.banking.digital_banking_platform.banking.dto.FundTransferRequestDto;
 import com.banking.digital_banking_platform.banking.dto.FundTransferResponseDto;
+import com.banking.digital_banking_platform.banking.dto.TransactionStatementDto;
 import com.banking.digital_banking_platform.banking.entity.Account;
 import com.banking.digital_banking_platform.banking.entity.IdempotencyRecord;
 import com.banking.digital_banking_platform.banking.entity.Transaction;
@@ -15,10 +16,13 @@ import com.banking.digital_banking_platform.banking.service.TransactionService;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.PessimisticLockException;
 import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,7 +32,7 @@ import java.util.UUID;
 public class TransactionServiceImpl implements TransactionService {
 
 
-
+   private final TransactionRepository transactionRepository;
     private final TransferInternalService transferInternalService;
     private final IdempotencyRepository idempotencyRepository;
     private final IdempotencyService idempotencyService;
@@ -67,7 +71,34 @@ public class TransactionServiceImpl implements TransactionService {
   throw new RuntimeException("Transfer failed retries");
     }
 
+    @Override
+    public Page<TransactionStatementDto> getStatement(String accountNumber, LocalDate from, LocalDate to, TransactionType type, Pageable pageable) {
 
+        LocalDateTime fromDate=from.atStartOfDay();
+        LocalDateTime toDate=to.atTime(23,59,59);
+
+        Page<Transaction>page;
+        if(type!=null){
+            page=transactionRepository
+                    .findByAccountNumberAndTransactionTypeAndTransactionDateBetween(
+                            accountNumber,type,fromDate,toDate,pageable
+                    );
+        }
+        else{
+            page=transactionRepository.findByAccountNumberAndTransactionDateBetween(
+                    accountNumber,
+                    fromDate,
+                    toDate,pageable
+            );
+        }
+        return  page.map(tx->new TransactionStatementDto(
+                tx.getReferenceId(),
+                tx.getTransactionType(),
+                tx.getAmount(),
+                tx.getStatus(),
+                tx.getTransactionDate()
+        ));
+    }
 
 
 }
