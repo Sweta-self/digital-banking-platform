@@ -18,7 +18,7 @@ public class NotificationRetryScheduler {
 
     @Scheduled(fixedDelay = 300000)//every 5 minutes
     public void retryFailedNotifications(){
-        List<Notification>failedNotifications=notificationRepository.findByStatus(
+        List<Notification>failedNotifications=notificationRepository.findByNotificationStatus(
                 NotificationStatus.FAILED
         );
         for(Notification n:failedNotifications){
