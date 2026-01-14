@@ -1,10 +1,15 @@
-package com.banking.digital_banking_platform.banking.recovery;
+package com.banking.digital_banking_platform.banking.serviceImpl;
 
+import com.banking.digital_banking_platform.banking.common.enums.NotificationEvent;
+import com.banking.digital_banking_platform.banking.common.enums.NotificationType;
 import com.banking.digital_banking_platform.banking.common.enums.TransactionStatus;
+import com.banking.digital_banking_platform.banking.common.util.NotificationTemplateBuilder;
+import com.banking.digital_banking_platform.banking.dto.NotificationData;
 import com.banking.digital_banking_platform.banking.entity.Account;
 import com.banking.digital_banking_platform.banking.entity.Transaction;
 import com.banking.digital_banking_platform.banking.repository.AccountRepository;
 import com.banking.digital_banking_platform.banking.repository.TransactionRepository;
+import com.banking.digital_banking_platform.banking.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class LedgerRecoveryService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final NotificationService notificationService;
+    private final NotificationTemplateBuilder templateBuilder;
     @Transactional
     public void handleRecovery(Transaction debit, Transaction credit){
  try {
@@ -67,6 +74,19 @@ public class LedgerRecoveryService {
          //Mark debit as REFUNDED
          debit.setStatus(TransactionStatus.REVERSED);
          transactionRepository.save(debit);
+         NotificationData data= new NotificationData();
+         data.setAmount(debit.getAmount());
+         data.setToAccount(credit.getAccountNumber());
+
+         String message= templateBuilder.buildMessage(
+                 NotificationEvent.REFUND_PROCESSED,
+                 data
+         );
+         notificationService.sendNotification(
+                 credit.getAccountNumber(),
+                 NotificationType.PUSH,
+                 message, credit.getReferenceId()
+         );
      }
  }
     }

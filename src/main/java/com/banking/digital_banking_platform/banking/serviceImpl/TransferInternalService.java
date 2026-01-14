@@ -1,14 +1,15 @@
 package com.banking.digital_banking_platform.banking.serviceImpl;
 
-import com.banking.digital_banking_platform.banking.common.enums.AccountStatus;
-import com.banking.digital_banking_platform.banking.common.enums.TransactionStatus;
-import com.banking.digital_banking_platform.banking.common.enums.TransactionType;
+import com.banking.digital_banking_platform.banking.common.enums.*;
+import com.banking.digital_banking_platform.banking.common.util.NotificationTemplateBuilder;
 import com.banking.digital_banking_platform.banking.dto.FundTransferRequestDto;
 import com.banking.digital_banking_platform.banking.dto.FundTransferResponseDto;
+import com.banking.digital_banking_platform.banking.dto.NotificationData;
 import com.banking.digital_banking_platform.banking.entity.Account;
 import com.banking.digital_banking_platform.banking.entity.Transaction;
 import com.banking.digital_banking_platform.banking.repository.AccountRepository;
 import com.banking.digital_banking_platform.banking.repository.TransactionRepository;
+import com.banking.digital_banking_platform.banking.service.NotificationService;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.PessimisticLockException;
@@ -26,6 +27,8 @@ public class TransferInternalService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final NotificationService notificationService;
+    private final NotificationTemplateBuilder templateBuilder;
 
     @Transactional
     public FundTransferResponseDto transferFunds(FundTransferRequestDto request,String refId ) {
@@ -73,6 +76,20 @@ public class TransferInternalService {
 
             transactionRepository.save(debitTx);
             transactionRepository.save(creditTx);
+
+            NotificationData data= new NotificationData();
+            data.setAmount(request.getAmount());
+            data.setToAccount(creditAcc.getAccountNumber());
+
+            String message= templateBuilder.buildMessage(
+                    NotificationEvent.FUND_TRANSFER_SUCCESS,
+                    data
+            );
+            notificationService.sendNotification(
+                    request.getSenderAccount(),
+                    NotificationType.PUSH,
+                    message,refId
+            );
             return new FundTransferResponseDto(
                     "Transfer successful",
                     refId

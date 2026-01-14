@@ -1,10 +1,11 @@
-package com.banking.digital_banking_platform.banking.recovery;
+package com.banking.digital_banking_platform.banking.scheduler;
 
 import com.banking.digital_banking_platform.banking.common.enums.TransactionStatus;
 import com.banking.digital_banking_platform.banking.common.enums.TransactionType;
 import com.banking.digital_banking_platform.banking.entity.Transaction;
 import com.banking.digital_banking_platform.banking.repository.AccountRepository;
 import com.banking.digital_banking_platform.banking.repository.TransactionRepository;
+import com.banking.digital_banking_platform.banking.serviceImpl.LedgerRecoveryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

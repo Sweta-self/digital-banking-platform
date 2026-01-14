@@ -9,5 +9,5 @@ public class KycUpdateRequestDto {
     @NotNull
     private Long customerId;
     @NotNull
-    private KycStatus kycStatus;//VERIFIED,REJECTED
+    private KycStatus kycStatus;//APPROVED,REJECTED
 }
