@@ -9,6 +9,7 @@ import com.banking.digital_banking_platform.banking.entity.Account;
 import com.banking.digital_banking_platform.banking.entity.Transaction;
 import com.banking.digital_banking_platform.banking.repository.AccountRepository;
 import com.banking.digital_banking_platform.banking.repository.TransactionRepository;
+import com.banking.digital_banking_platform.banking.service.AuditService;
 import com.banking.digital_banking_platform.banking.service.NotificationService;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class TransferInternalService {
     private final TransactionRepository transactionRepository;
     private final NotificationService notificationService;
     private final NotificationTemplateBuilder templateBuilder;
+    private final AuditService auditService;
 
     @Transactional
     public FundTransferResponseDto transferFunds(FundTransferRequestDto request,String refId ) {
@@ -45,9 +47,18 @@ public class TransferInternalService {
                     false);
             validateAccount(debitAcc);
             validateAccount(creditAcc);
+            auditService.log(
+                    "TRANSFER_INITIATED",
+                    debitAcc.getId(),
+                    "CUSTOMER",
+                    refId,
+                    "INITIATED" ,
+                     "Transfer validation successful"
+            );
             if(debitAcc.getBalance().compareTo(request.getAmount())<0){
                 throw new RuntimeException("Insufficient Balance");
             }
+
             //Save debit Ledger
             Transaction debitTx= createLedger(
                     refId,
@@ -64,9 +75,26 @@ public class TransferInternalService {
 
             //Debit
             debitAcc.setBalance(debitAcc.getBalance().subtract(request.getAmount()));
+            auditService.log(
+                    "DEBIT_SUCCESS",
+                    debitAcc.getId(),
+                    "CUSTOMER",
+                    refId,
+                    "SUCCESS" ,
+                    "Amount debited"
+            );
+
             //Credit
             creditAcc.setBalance(creditAcc.getBalance().add(request.getAmount()));
 
+            auditService.log(
+                    "CREDIT_SUCCESS",
+                    creditAcc.getId(),
+                    "CUSTOMER",
+                    refId,
+                    "SUCCESS" ,
+                    "Amount credited"
+            );
             accountRepository.save(debitAcc);
             accountRepository.save(creditAcc);
 
@@ -74,8 +102,17 @@ public class TransferInternalService {
             debitTx.setStatus(TransactionStatus.SUCCESS);
             creditTx.setStatus(TransactionStatus.SUCCESS);
 
+
             transactionRepository.save(debitTx);
             transactionRepository.save(creditTx);
+            auditService.log(
+                    "TRANSFER_SUCCESS",
+                    debitAcc.getId(),
+                    "CUSTOMER",
+                    refId,
+                    "SUCCESS" ,
+                    "Transfer Completed"
+            );
 
             NotificationData data= new NotificationData();
             data.setAmount(request.getAmount());
