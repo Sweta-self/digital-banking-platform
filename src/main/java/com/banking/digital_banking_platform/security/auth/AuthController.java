@@ -1,6 +1,8 @@
 package com.banking.digital_banking_platform.security.auth;
 
 
+import com.banking.digital_banking_platform.banking.dto.RefreshTokenRequest;
+import com.banking.digital_banking_platform.banking.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/register")
     public ResponseEntity<String>register(
@@ -27,5 +30,15 @@ public class AuthController {
             @RequestBody LoginRequest request
     ){
         return ResponseEntity.ok(authService.login(request));
+    }
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse>refreshToken(
+            @RequestBody RefreshTokenRequest request
+            ){
+        return ResponseEntity.ok(new LoginResponse(
+                refreshTokenService.refreshAccessToken(
+                        request.getRefreshToken())
+                ,request.getRefreshToken())
+        );
     }
 }

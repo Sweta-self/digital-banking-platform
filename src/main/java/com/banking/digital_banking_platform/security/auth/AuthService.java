@@ -1,6 +1,8 @@
 package com.banking.digital_banking_platform.security.auth;
 
 import com.banking.digital_banking_platform.banking.entity.Customer;
+import com.banking.digital_banking_platform.banking.entity.RefreshToken;
+import com.banking.digital_banking_platform.banking.service.RefreshTokenService;
 import com.banking.digital_banking_platform.security.config.JwtUtil;
 import com.banking.digital_banking_platform.security.user.Role;
 import com.banking.digital_banking_platform.security.user.User;
@@ -15,6 +17,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     //Register
     public void register(RegisterRequest request){
@@ -36,10 +39,16 @@ public class AuthService {
     public LoginResponse login(LoginRequest request){
         User user =userRepository.findByEmail(request.getEmail())
                 .orElseThrow(()->new RuntimeException("Invalid email"));
+        //Manual password check
         if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
             throw new RuntimeException("Invalid password");
         }
+        //Access token
         String token=jwtUtil.generateToken( user.getEmail(),user.getRole());
-        return new LoginResponse(token);
+
+        //Refresh token
+        RefreshToken refreshToken=
+                refreshTokenService.createRefreshToken(user);
+        return new LoginResponse(token,refreshToken.getToken());
     }
 }
