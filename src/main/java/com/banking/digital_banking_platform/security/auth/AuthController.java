@@ -35,10 +35,12 @@ public class AuthController {
     public ResponseEntity<LoginResponse>refreshToken(
             @RequestBody RefreshTokenRequest request
             ){
-        return ResponseEntity.ok(new LoginResponse(
-                refreshTokenService.refreshAccessToken(
-                        request.getRefreshToken())
-                ,request.getRefreshToken())
+        String newRefreshToken=refreshTokenService.rotateRefreshToken(request.getRefreshToken());
+        String newAccessToken= refreshTokenService.refreshAccessToken(newRefreshToken);
+        return ResponseEntity.ok(
+                new LoginResponse(
+                        newAccessToken,newRefreshToken
+                )
         );
     }
 }

@@ -53,4 +53,17 @@ public class RefreshTokenImpl implements RefreshTokenService {
         User user=rtoken.getUser();
         return jwtUtil.generateToken(user.getEmail(), user.getRole());
     }
+
+    @Override
+    public String rotateRefreshToken(String oldToken) {
+       RefreshToken existingToken=
+               refreshTokenRepository.findByToken(oldToken)
+                       .orElseThrow(()->new RuntimeException("Invalid refresh Token"));
+        verifyExpiration(existingToken);
+
+        //Rotation
+        existingToken.setToken(UUID.randomUUID().toString());
+         refreshTokenRepository.save(existingToken);
+        return existingToken.getToken();
+    }
 }

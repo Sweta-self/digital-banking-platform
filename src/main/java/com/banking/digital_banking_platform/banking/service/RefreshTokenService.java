@@ -8,4 +8,5 @@ public interface RefreshTokenService {
     public RefreshToken createRefreshToken(User user);
     public RefreshToken verifyExpiration(RefreshToken token);
     public String refreshAccessToken(String token);
+    public String rotateRefreshToken(String oldToken);
 }
