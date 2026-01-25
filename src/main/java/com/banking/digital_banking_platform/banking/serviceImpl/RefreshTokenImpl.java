@@ -35,6 +35,7 @@ public class RefreshTokenImpl implements RefreshTokenService {
       refreshToken.setExpiryDate(
               Instant.now().plus(refreshTokenDays, ChronoUnit.DAYS)
       );
+      refreshToken.setRevoked(false);
  return refreshTokenRepository.save(refreshToken);
     }
     @Override
@@ -84,5 +85,22 @@ public class RefreshTokenImpl implements RefreshTokenService {
         newToken.setRevoked(false);
         refreshTokenRepository.save(newToken);
         return newToken.getToken();
+    }
+
+    @Transactional
+    @Override
+    public void logout(String refreshToken) {
+
+        RefreshToken token=
+                refreshTokenRepository.findByToken(refreshToken)
+                        .orElseThrow(()->new RuntimeException("Invalid token"));
+        token.setRevoked(true);
+        refreshTokenRepository.save(token);
+    }
+
+    @Transactional
+    @Override
+    public void logoutAllDevices(Long userId) {
+ refreshTokenRepository.revokeAllByUser(userId);
     }
 }

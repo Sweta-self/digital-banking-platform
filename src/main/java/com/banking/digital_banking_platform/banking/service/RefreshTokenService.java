@@ -9,4 +9,6 @@ public interface RefreshTokenService {
     public RefreshToken verifyExpiration(RefreshToken token);
     public String refreshAccessToken(String token);
     public String rotateRefreshToken(String oldToken);
+    void logout(String refreshToken);
+    void logoutAllDevices(Long userId);
 }

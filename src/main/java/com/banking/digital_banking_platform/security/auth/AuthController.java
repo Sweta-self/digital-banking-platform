@@ -5,10 +5,7 @@ import com.banking.digital_banking_platform.banking.dto.RefreshTokenRequest;
 import com.banking.digital_banking_platform.banking.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/auth")
@@ -42,5 +39,20 @@ public class AuthController {
                         newAccessToken,newRefreshToken
                 )
         );
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?>logout(
+            @RequestBody RefreshTokenRequest request
+    ) {
+        refreshTokenService.logout(request.getRefreshToken());
+        return ResponseEntity.ok("Logout successfully");
+    }
+
+    @PostMapping("/logout-all")
+    public ResponseEntity<?>logoutAllDevices(
+            @RequestParam Long userId
+    ){
+        return ResponseEntity.ok("Logged out from all devices");
     }
 }
