@@ -8,6 +8,7 @@ import com.banking.digital_banking_platform.security.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -55,15 +56,33 @@ public class RefreshTokenImpl implements RefreshTokenService {
     }
 
     @Override
+    @Transactional
     public String rotateRefreshToken(String oldToken) {
        RefreshToken existingToken=
                refreshTokenRepository.findByToken(oldToken)
                        .orElseThrow(()->new RuntimeException("Invalid refresh Token"));
+       //REUSE DETECTION
+        if(existingToken.isRevoked()){
+            //means already used once
+            refreshTokenRepository.deleteByUser(existingToken.getUser());
+            throw new RuntimeException("Refresh token reuse detected.Please login again.");
+        }
         verifyExpiration(existingToken);
+       // mark old token as used
+        existingToken.setRevoked(true);
+        refreshTokenRepository.save(existingToken);
+
 
         //Rotation
-        existingToken.setToken(UUID.randomUUID().toString());
-         refreshTokenRepository.save(existingToken);
-        return existingToken.getToken();
+        RefreshToken newToken= new RefreshToken();
+        newToken.setUser(existingToken.getUser());
+        newToken.setToken(UUID.randomUUID().toString());
+
+        //same expiry
+        newToken.setExpiryDate(existingToken.getExpiryDate());
+
+        newToken.setRevoked(false);
+        refreshTokenRepository.save(newToken);
+        return newToken.getToken();
     }
 }
