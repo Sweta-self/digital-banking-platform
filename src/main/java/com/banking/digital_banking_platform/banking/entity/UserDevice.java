@@ -33,4 +33,12 @@ public class UserDevice {
     @JoinColumn(name="user_id")
     private User user;
 
+    @Column
+    private String country;
+
+    @Column
+    private String city;
+    @Column
+    private boolean suspicious;
+
 }
