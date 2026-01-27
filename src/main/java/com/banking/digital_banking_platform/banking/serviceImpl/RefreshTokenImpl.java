@@ -1,7 +1,9 @@
 package com.banking.digital_banking_platform.banking.serviceImpl;
 
 import com.banking.digital_banking_platform.banking.entity.RefreshToken;
+import com.banking.digital_banking_platform.banking.entity.UserDevice;
 import com.banking.digital_banking_platform.banking.repository.RefreshTokenRepository;
+import com.banking.digital_banking_platform.banking.service.DeviceService;
 import com.banking.digital_banking_platform.banking.service.RefreshTokenService;
 import com.banking.digital_banking_platform.security.config.JwtUtil;
 import com.banking.digital_banking_platform.security.user.User;
@@ -20,17 +22,19 @@ public class RefreshTokenImpl implements RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtUtil jwtUtil;
+    private final DeviceService deviceService;
     @Value("${app.jwt.refresh-expiration-days}")
     private Long refreshTokenDays;
 
     @Override
-    public RefreshToken createRefreshToken(User user) {
+    public RefreshToken createRefreshToken(User user, UserDevice device) {
 
         //one user-> one token
-      refreshTokenRepository.deleteByUser(user);
+      //refreshTokenRepository.deleteByUser(user);
 
       RefreshToken refreshToken=new RefreshToken();
       refreshToken.setUser(user);
+      refreshToken.setDevice(device);
       refreshToken.setToken(UUID.randomUUID().toString());
       refreshToken.setExpiryDate(
               Instant.now().plus(refreshTokenDays, ChronoUnit.DAYS)
@@ -95,6 +99,12 @@ public class RefreshTokenImpl implements RefreshTokenService {
                 refreshTokenRepository.findByToken(refreshToken)
                         .orElseThrow(()->new RuntimeException("Invalid token"));
         token.setRevoked(true);
+        //get device from token
+        UserDevice device=token.getDevice();
+        if(device!=null){
+            deviceService.deactivateDevice(token.getUser().getId(),device.getDeviceId());
+        }
+
         refreshTokenRepository.save(token);
     }
 

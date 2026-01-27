@@ -34,4 +34,8 @@ public class RefreshToken {
 
     @Column(nullable = false)
     private  boolean revoked;
+
+    @ManyToOne
+    @JoinColumn(name="device_id")
+    private UserDevice device;
 }
