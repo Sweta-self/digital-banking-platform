@@ -80,6 +80,7 @@ public class DeviceServiceImpl implements DeviceService {
 
             //suspicious check
         boolean suspicious=isSuspiciousLogin(user,ip,location);
+        System.out.println("suspicious value"+suspicious);
         device.setSuspicious(suspicious);
 
        return deviceRepository.save(device);

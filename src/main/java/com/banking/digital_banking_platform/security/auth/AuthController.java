@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import static com.banking.digital_banking_platform.security.config.IpUtil.getClientIp;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -29,7 +31,7 @@ public class AuthController {
             HttpServletRequest httpServletRequest
     ){
         String ip=getClientIp(httpServletRequest);
-        return ResponseEntity.ok(authService.login(request,ip));
+        return ResponseEntity.ok(authService.login(request,httpServletRequest));
     }
     @PostMapping("/refresh")
     public ResponseEntity<LoginResponse>refreshToken(
@@ -59,12 +61,6 @@ public class AuthController {
         return ResponseEntity.ok("Logged out from all devices");
     }
 
-    private String getClientIp(HttpServletRequest request){
-        String xf= request.getHeader("X-Forwarded-For");
-        if(xf!=null && !xf.isEmpty()){
-            return xf.split(",")[0];
-        }
-        return request.getRemoteAddr();
-    }
+
 
 }

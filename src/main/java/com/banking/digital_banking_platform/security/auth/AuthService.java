@@ -5,10 +5,13 @@ import com.banking.digital_banking_platform.banking.entity.RefreshToken;
 import com.banking.digital_banking_platform.banking.entity.UserDevice;
 import com.banking.digital_banking_platform.banking.service.DeviceService;
 import com.banking.digital_banking_platform.banking.service.RefreshTokenService;
+import com.banking.digital_banking_platform.banking.serviceImpl.EmailService;
+import com.banking.digital_banking_platform.security.config.IpUtil;
 import com.banking.digital_banking_platform.security.config.JwtUtil;
 import com.banking.digital_banking_platform.security.user.Role;
 import com.banking.digital_banking_platform.security.user.User;
 import com.banking.digital_banking_platform.security.user.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,8 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final RefreshTokenService refreshTokenService;
     private final DeviceService deviceService;
+    private final EmailService emailService;
+
 
     //Register
     public void register(RegisterRequest request){
@@ -39,14 +44,26 @@ public class AuthService {
     }
 
     //Login
-    public LoginResponse login(LoginRequest request,String ip){
+    public LoginResponse login(LoginRequest request, HttpServletRequest httpReq){
         User user =userRepository.findByEmail(request.getEmail())
                 .orElseThrow(()->new RuntimeException("Invalid email"));
         //Manual password check
         if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
             throw new RuntimeException("Invalid password");
         }
+
+        //Get ip
+        String ip= IpUtil.getClientIp(httpReq);
+     System.out.println("ippppppppppppppppppppppppppppp"+ip);
         UserDevice device=deviceService.registerDevice(user,request,ip);
+        if(device.isSuspicious()){
+            System.out.println("INSIDE SUSPICIOUS BLOCK");
+            emailService.sendSuspiciousLoginAlert(
+                    user.getEmail(),
+                    request.getDeviceName(),
+                    ip,"Pune"
+            );
+        }
         //Access token
         String token=jwtUtil.generateToken( user.getEmail(),user.getRole());
 
